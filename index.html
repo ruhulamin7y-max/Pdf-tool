@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pro Chalkboard MCQ - YouTube Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&family=Gochi+Hand&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<style>
+:root {
+  --wood: #3e2723;
+  --board: #1b3022;
+  --chalk: #fefefe;
+  --accent: #ffd54f; /* Yellow */
+  --correct: #00e676; /* Mint Green */
+  --info: #81d4fa; /* Blue */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { 
+    background: #0f172a; 
+    font-family: 'Montserrat', sans-serif; 
+    color: var(--chalk); 
+    padding: 20px;
+}
+
+/* Header UI */
+.header { text-align: center; margin-bottom: 30px; }
+.header h1 { font-size: 32px; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; }
+
+/* Tabs */
+.tabs { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; }
+.tab { 
+    padding: 12px 30px; border-radius: 50px; cursor: pointer; 
+    background: #1e293b; border: 2px solid #334155; 
+    font-weight: 800; transition: 0.3s; color: #94a3b8;
+}
+.tab.active { background: var(--correct); color: #000; border-color: var(--correct); }
+
+/* Input Section */
+.panel { display: none; max-width: 1000px; margin: 0 auto; }
+.panel.active { display: block; }
+.card { background: #1e293b; padding: 25px; border-radius: 20px; border: 1px solid #334155; }
+textarea { 
+    width: 100%; height: 180px; background: #000; color: #00ff00; 
+    padding: 15px; border-radius: 12px; font-family: monospace; font-size: 16px; border: none;
+}
+.btn-row { display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
+.btn { 
+    flex: 1; padding: 18px; border-radius: 12px; border: none; 
+    font-weight: 900; cursor: pointer; text-transform: uppercase; font-size: 14px;
+}
+.btn-pdf { background: #455a64; color: white; }
+.btn-ppt { background: #bf360c; color: white; }
+.btn-test { background: var(--accent); color: #000; }
+
+/* REALISTIC CHALKBOARD DESIGN */
+.board-container { 
+    width: 100%; max-width: 900px; margin: 0 auto 40px;
+    border: 15px solid var(--wood); 
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8), inset 0 0 100px rgba(0,0,0,0.5);
+    background: var(--board);
+    aspect-ratio: 16/9;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px;
+}
+
+/* Chalk Texture Overlay */
+.board-container::before {
+    content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-image: url('https://www.transparenttextures.com/patterns/black-board.png');
+    opacity: 0.2; pointer-events: none;
+}
+
+/* Question Slide Text */
+.q-title { 
+    font-family: 'Gochi Hand', cursive; font-size: clamp(24px, 4vw, 42px);
+    line-height: 1.2; color: var(--chalk); margin-bottom: 30px;
+    text-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+}
+
+.opt-list { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.opt-item { 
+    background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;
+    border-left: 5px solid var(--accent); font-size: clamp(18px, 2.5vw, 28px);
+    font-family: 'Gochi Hand', cursive;
+}
+.opt-item span { color: var(--accent); font-weight: 900; margin-right: 10px; font-family: 'Montserrat'; }
+
+/* Slide 2: Answer Only Design */
+.ans-reveal { text-align: center; }
+.ans-circle { 
+    font-size: 120px; font-weight: 900; color: var(--correct); 
+    margin-bottom: 10px; text-shadow: 0 0 30px rgba(0,230,118,0.4);
+}
+.ans-val { font-size: 40px; color: var(--chalk); margin-bottom: 20px; border-bottom: 3px dashed var(--correct); display: inline-block; }
+.exp-text { 
+    font-family: 'Gochi Hand', cursive; font-size: clamp(20px, 2vw, 30px);
+    color: var(--info); line-height: 1.4; padding: 0 20px;
+}
+
+/* Status Msg */
+#status { margin-top: 15px; text-align: center; color: var(--correct); font-weight: bold; }
+
+@media (max-width: 600px) {
+    .opt-list { grid-template-columns: 1fr; }
+    .board-container { padding: 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🎬 YouTube MCQ Studio Pro</h1>
+</div>
+
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('input')">1. INPUT DATA</div>
+    <div class="tab" onclick="switchTab('preview')">2. PREVIEW SLIDES</div>
+</div>
+
+<div id="tab-input" class="panel active">
+    <div class="card">
+        <textarea id="mcqInput" placeholder="Paste: Question | Option A | Option B | Option C | Option D | Correct No (1-4) | Explanation"></textarea>
+        <div class="btn-row">
+            <button class="btn btn-pdf" onclick="exportPDF()">📥 Download HD PDF</button>
+            <button class="btn btn-ppt" onclick="exportPPT()">📊 Download HD PPT</button>
+            <button class="btn btn-test" onclick="startTest()">🎯 Live Test Mode</button>
+        </div>
+        <div id="status"></div>
+    </div>
+</div>
+
+<div id="tab-preview" class="panel">
+    <div id="preview-container"></div>
+</div>
+
+<!-- Test View Overlay -->
+<div id="tab-test" class="panel" style="max-width:100% !important;">
+    <div id="test-board" class="board-container">
+        <!-- Content injected here -->
+    </div>
+    <div style="text-align:center; margin-top:20px;">
+        <button class="btn" style="background:#444; color:white; max-width:250px;" onclick="nextTest()">NEXT QUESTION →</button>
+    </div>
+</div>
+
+<script>
+let mcqData = [];
+let testIdx = 0;
+const LBL = ["A", "B", "C", "D"];
+
+function switchTab(t){
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(tab=>tab.classList.remove('active'));
+    document.getElementById('tab-'+t).classList.add('active');
+    if(t==='preview') generatePreview();
+}
+
+function parseData(){
+    const text = document.getElementById('mcqInput').value.trim();
+    const data = [];
+    text.split('\n').forEach(line => {
+        if(!line.includes('|')) return;
+        const c = line.split('|').map(s=>s.trim()).filter(s=>s!=='');
+        if(c.length < 6 || c[0].toLowerCase().includes('question') || c[0].includes('---')) return;
+        data.push({ q: c[0], opts: [c[1], c[2], c[3], c[4]], ans: parseInt(c[5])-1, exp: c[6]||"" });
+    });
+    return data;
+}
+
+function generatePreview(){
+    mcqData = parseData();
+    const con = document.getElementById('preview-container');
+    con.innerHTML = '';
+    mcqData.forEach((m, i) => {
+        con.innerHTML += `
+            <div style="text-align:center; color:var(--accent); margin-bottom:10px;">QUESTION ${i+1} SET</div>
+            <div class="board-container">
+                <div class="q-title">Q. ${m.q}</div>
+                <div class="opt-list">
+                    ${m.opts.map((o,oi)=>`<div class="opt-item"><span>${LBL[oi]}</span> ${o}</div>`).join('')}
+                </div>
+            </div>
+            <div class="board-container">
+                <div class="ans-reveal">
+                    <div class="ans-circle">${LBL[m.ans]}</div>
+                    <div class="ans-val">${m.opts[m.ans]}</div>
+                    <div class="exp-text">${m.exp}</div>
+                </div>
+            </div>
+        `;
+    });
+}
+
+// PDF EXPORT
+async function exportPDF() {
+    mcqData = parseData();
+    if(!mcqData.length) return;
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('l', 'mm', [297, 167]);
+
+    mcqData.forEach((m, i) => {
+        if(i > 0) pdf.addPage();
+        // Page 1: Q
+        pdf.setFillColor(27, 48, 34); pdf.rect(0, 0, 297, 167, 'F');
+        pdf.setTextColor(255, 255, 255); pdf.setFontSize(28);
+        pdf.text(pdf.splitTextToSize(`Q. ${m.q}`, 250), 20, 40);
+        pdf.setTextColor(255, 213, 79); pdf.setFontSize(22);
+        pdf.text(`A. ${m.opts[0]}`, 25, 90); pdf.text(`B. ${m.opts[1]}`, 150, 90);
+        pdf.text(`C. ${m.opts[2]}`, 25, 120); pdf.text(`D. ${m.opts[3]}`, 150, 120);
+
+        // Page 2: Ans
+        pdf.addPage();
+        pdf.setFillColor(20, 40, 30); pdf.rect(0, 0, 297, 167, 'F');
+        pdf.setTextColor(0, 230, 118); pdf.setFontSize(80); pdf.text(LBL[m.ans], 148, 60, {align:'center'});
+        pdf.setTextColor(255, 255, 255); pdf.setFontSize(30); pdf.text(m.opts[m.ans], 148, 85, {align:'center'});
+        pdf.setTextColor(129, 212, 250); pdf.setFontSize(18);
+        pdf.text(pdf.splitTextToSize(m.exp, 240), 148, 110, {align:'center'});
+    });
+    pdf.save("Class_MCQ_Slides.pdf");
+}
+
+// PPT EXPORT
+async function exportPPT() {
+    mcqData = parseData();
+    if(!mcqData.length) return;
+    let pres = new PptxGenJS();
+    pres.layout = 'LAYOUT_WIDE';
+
+    mcqData.forEach((m, i) => {
+        let s1 = pres.addSlide();
+        s1.background = { color: '1b3022' };
+        s1.addText(`Q. ${m.q}`, { x:0.5, y:1.5, w:12, color:'FFFFFF', fontSize:36, bold:true, align:'center' });
+        s1.addText(`A. ${m.opts[0]}`, { x:1, y:4.2, w:5, color:'FFD54F', fontSize:28, bold:true });
+        s1.addText(`B. ${m.opts[1]}`, { x:7, y:4.2, w:5, color:'FFD54F', fontSize:28, bold:true });
+        s1.addText(`C. ${m.opts[2]}`, { x:1, y:5.8, w:5, color:'FFD54F', fontSize:28, bold:true });
+        s1.addText(`D. ${m.opts[3]}`, { x:7, y:5.8, w:5, color:'FFD54F', fontSize:28, bold:true });
+
+        let s2 = pres.addSlide();
+        s2.background = { color: '13241a' };
+        s2.addText(LBL[m.ans], { x:0, y:1.5, w:13.3, color:'00E676', fontSize:120, align:'center', bold:true });
+        s2.addText(m.opts[m.ans], { x:0, y:3.8, w:13.3, color:'FFFFFF', fontSize:44, align:'center', bold:true });
+        s2.addText(m.exp, { x:1, y:5.5, w:11.3, color:'81D4FA', fontSize:26, align:'center', italic:true });
+    });
+    pres.writeFile({ fileName: 'MCQ_YouTube_HD.pptx' }).then(()=>setStatus("✅ PPT DOWNLOADED"));
+}
+
+// LIVE TEST
+function startTest(){
+    mcqData = parseData();
+    if(!mcqData.length) return;
+    testIdx = 0;
+    switchTab('test');
+    renderTest(false);
+}
+
+function renderTest(showAns){
+    const m = mcqData[testIdx];
+    const board = document.getElementById('test-board');
+    if(!showAns){
+        board.innerHTML = `
+            <div class="q-title">Q. ${m.q}</div>
+            <div class="opt-list">
+                ${m.opts.map((o,oi)=>`<div class="opt-item" onclick="renderTest(true)"><span>${LBL[oi]}</span> ${o}</div>`).join('')}
+            </div>
+        `;
+    } else {
+        board.innerHTML = `
+            <div class="ans-reveal">
+                <div class="ans-circle">${LBL[m.ans]}</div>
+                <div class="ans-val">${m.opts[m.ans]}</div>
+                <div class="exp-text">${m.exp}</div>
+            </div>
+        `;
+    }
+}
+
+function nextTest(){
+    if(testIdx < mcqData.length - 1) { testIdx++; renderTest(false); }
+    else { alert("Lesson Ended!"); switchTab('input'); }
+}
+
+function setStatus(s){ document.getElementById('status').innerText = s; }
+</script>
+
+</body>
+</html>
