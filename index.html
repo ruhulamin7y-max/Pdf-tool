@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chalkboard MCQ Studio Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PptxGenJS/3.12.0/pptxgen.bundled.js"></script>
+<style>
+:root {
+  --bg:#0a1628; --panel:#1e293b; --board:#1F3D2B; --board-dark:#163022;
+  --chalk:#F5F5F5; --yellow:#FFD54F; --blue:#90CAF9; --red:#EF9A9A; --green:#A5D6A7;
+  --border:#2d4a3a; --accent:#3d7a55;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);font-family:'Segoe UI',sans-serif;color:var(--chalk);min-height:100vh;padding:20px;}
+.header{text-align:center;margin-bottom:28px;}
+.header h1{font-family:'Caveat',cursive;font-size:42px;color:var(--yellow);letter-spacing:1px;text-shadow:0 0 20px rgba(255,213,79,.3);}
+.header p{color:#64748b;font-size:14px;margin-top:4px;}
+.tabs{display:flex;gap:6px;justify-content:center;margin-bottom:24px;flex-wrap:wrap;}
+.tab{padding:10px 28px;border-radius:8px;border:2px solid var(--border);background:var(--panel);color:#94a3b8;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.5px;}
+.tab:hover{border-color:var(--yellow);color:var(--yellow);}
+.tab.active{background:var(--board);border-color:var(--yellow);color:var(--yellow);}
+.panel{display:none;}.panel.active{display:block;}
+.input-card{max-width:900px;margin:0 auto 24px;background:var(--panel);border:2px solid var(--border);border-radius:14px;padding:22px;}
+.fmt{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:12px 16px;font-family:monospace;font-size:12px;color:#94a3b8;margin-bottom:16px;line-height:1.9;}
+.fmt b{color:var(--yellow);}
+textarea{width:100%;height:180px;background:#0f172a;color:var(--chalk);border:1px solid #334155;border-radius:10px;padding:14px;font-size:13px;font-family:monospace;resize:vertical;outline:none;line-height:1.6;}
+textarea:focus{border-color:var(--accent);}
+.btn-row{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;}
+.btn{padding:12px 26px;font-size:14px;font-weight:800;border-radius:8px;cursor:pointer;border:none;transition:all .2s;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:8px;}
+.btn-preview{background:#f1f5f9;color:#0f172a;}.btn-preview:hover{background:#fff;}
+.btn-pdf{background:var(--board);color:var(--chalk);border:2px solid var(--yellow);}.btn-pdf:hover{background:#2a5040;}
+.btn-ppt{background:#c0392b;color:#fff;}.btn-ppt:hover{background:#e74c3c;}
+.btn-test{background:var(--yellow);color:#0f172a;font-weight:900;}.btn-test:hover{background:#ffe082;}
+#status{margin-top:12px;font-size:14px;color:#10b981;font-weight:700;min-height:20px;}
+#slides-container{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:20px;}
+.slide-wrapper{border:3px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+.slide-num{background:var(--board-dark);color:var(--yellow);font-family:'Caveat',cursive;font-size:15px;padding:6px 16px;border-bottom:1px solid var(--border);}
+.slide{width:100%;aspect-ratio:16/9;background:var(--board);color:var(--chalk);padding:5% 8%;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;font-family:'Patrick Hand',cursive;}
+.slide::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,255,255,.02) 0%,rgba(0,0,0,.28) 100%);pointer-events:none;}
+.q-text{font-size:clamp(15px,2.5vw,28px);line-height:1.35;color:var(--chalk);margin-bottom:4%;z-index:2;}
+.opts{display:flex;flex-direction:column;gap:1.8%;z-index:2;}
+.opt{font-size:clamp(13px,1.9vw,21px);color:var(--chalk);display:flex;align-items:flex-start;gap:10px;}
+.opt.correct .opt-label{color:var(--green);}
+.opt.correct .opt-text{color:var(--green);font-weight:bold;}
+.opt-label{color:var(--yellow);min-width:26px;font-weight:bold;}
+.ans-badge{margin-top:4%;display:flex;align-items:center;gap:12px;z-index:2;flex-wrap:wrap;}
+.ans-pill{background:rgba(255,213,79,.15);border:2px dashed var(--yellow);color:var(--yellow);font-size:clamp(11px,1.5vw,18px);padding:5px 16px;border-radius:4px;font-family:'Patrick Hand',cursive;font-weight:bold;white-space:nowrap;}
+.exp-text{color:var(--blue);font-size:clamp(10px,1.2vw,15px);font-style:italic;flex:1;}
+/* TEST STYLES */
+#test-panel{max-width:860px;margin:0 auto;}
+.test-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+.test-progress{font-family:'Caveat',cursive;font-size:22px;color:var(--yellow);}
+.test-score-badge{background:var(--board);border:2px solid var(--yellow);color:var(--yellow);font-family:'Caveat',cursive;font-size:20px;padding:6px 20px;border-radius:8px;}
+.test-card{background:var(--board);border:2px solid var(--border);border-radius:16px;padding:38px;font-family:'Patrick Hand',cursive;position:relative;overflow:hidden;min-height:380px;display:flex;flex-direction:column;justify-content:center;}
+.test-q{font-size:25px;line-height:1.4;color:var(--chalk);margin-bottom:26px;z-index:2;}
+.test-opts{display:flex;flex-direction:column;gap:11px;z-index:2;}
+.test-opt{display:flex;align-items:center;gap:14px;font-size:20px;color:var(--chalk);padding:12px 16px;border:2px solid rgba(245,245,245,0.1);border-radius:10px;cursor:pointer;background:rgba(255,255,255,0.02);}
+.test-opt.correct-ans{border-color:var(--green);background:rgba(165,214,167,0.1);color:var(--green);}
+.test-opt.wrong-ans{border-color:var(--red);background:rgba(239,154,154,0.1);color:var(--red);}
+.loader{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:var(--yellow);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🖊️ Chalkboard MCQ Studio Pro</h1>
+  <p>Paste markdown table → Get matching 2-page PDF/PPT exports & Live Tests</p>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('input')">📋 Input</div>
+  <div class="tab" onclick="switchTab('slides')">🖼️ Slides Preview</div>
+  <div class="tab" onclick="switchTab('test')">🎯 Live Test</div>
+</div>
+
+<div id="tab-input" class="panel active">
+  <div class="input-card">
+    <div class="fmt">
+      <b>✅ Input Format (Markdown Table):</b><br>
+      | Question | Option A | Option B | Option C | Option D | Correct (1-4) | Explanation |<br>
+      |---|---|---|---|---|---|---|<br>
+      | What is the unit of Force? | Newton | Joule | Watt | Pascal | 1 | Newton is the SI unit of force. |
+    </div>
+    <textarea id="mcqInput" placeholder="Paste your markdown table here..."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-preview" onclick="parseAndPreview()">👁️ Preview</button>
+      <button class="btn btn-pdf" onclick="exportPDF()">📥 Download PDF (2 pgs/Q)</button>
+      <button class="btn btn-ppt" onclick="exportPPT()">📊 Download PPT (2 slds/Q)</button>
+      <button class="btn btn-test" onclick="startTest()">🎯 Live Test</button>
+    </div>
+    <div id="status"></div>
+  </div>
+</div>
+
+<div id="tab-slides" class="panel">
+  <div id="slides-container"></div>
+</div>
+
+<div id="tab-test" class="panel">
+  <div id="test-panel">
+    <div id="test-empty" style="text-align:center;padding:60px;color:#475569;font-size:18px;">
+      Paste MCQs in <strong style="color:var(--yellow)">Input tab</strong> then click <strong style="color:var(--yellow)">Live Test</strong>
+    </div>
+    <div id="test-content" style="display:none;">
+       <div class="test-header">
+          <div class="test-progress" id="test-progress">Q 1 of 10</div>
+          <div id="dot-nav" style="display:flex; gap:5px;"></div>
+          <div class="test-score-badge" id="test-score">Score: 0</div>
+       </div>
+       <div class="test-card">
+          <div class="test-q" id="test-q"></div>
+          <div class="test-opts" id="test-opts"></div>
+          <div class="test-feedback" id="test-feedback" style="margin-top:20px; padding:15px; border-radius:8px; display:none;"></div>
+       </div>
+       <div style="display:flex; justify-content:center; gap:10px; margin-top:20px;">
+          <button class="btn" style="background:#475569; color:white;" onclick="testNav(-1)">← Prev</button>
+          <button class="btn" style="background:var(--accent); color:white;" onclick="testNav(1)" id="next-btn">Next →</button>
+       </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let mcqData = [];
+const LBLS = ["A","B","C","D"];
+const COLORS = { board:[31,61,43], white:[245,245,245], yellow:[255,213,79], green:[165,214,167], blue:[144,202,249], boardDark:[22,48,34] };
+
+function switchTab(name){
+  ['input','slides','test'].forEach(n => {
+    document.getElementById('tab-'+n).classList.toggle('active', n===name);
+    document.querySelectorAll('.tab')[['input','slides','test'].indexOf(n)].classList.toggle('active', n===name);
+  });
+}
+
+function parseMCQs(){
+  const raw=document.getElementById('mcqInput').value.trim();
+  if(!raw) return [];
+  const results=[];
+  raw.split('\n').forEach(line => {
+    line = line.trim();
+    if(!line.includes('|')) return;
+    const parts = line.replace(/^\|/,'').replace(/\|$/,'').split('|').map(p=>p.trim());
+    if(parts.every(p=>/^[-:\s]+$/.test(p))) return; // separator
+    const n = parseInt(parts[5]);
+    if(isNaN(n) || n < 1 || n > 4) return;
+    const qText = parts[0].toLowerCase();
+    if(qText === 'question' || qText === 'q') return;
+    results.push({ q:parts[0], opts:[parts[1],parts[2],parts[3],parts[4]], correct:n-1, exp:parts[6]||'' });
+  });
+  return results;
+}
+
+function parseAndPreview(){
+  mcqData = parseMCQs();
+  if(!mcqData.length) { setStatus("❌ No valid MCQs found!", "orange"); return; }
+  const con = document.getElementById('slides-container');
+  con.innerHTML = '';
+  mcqData.forEach((m, i) => {
+    const html = `
+      <div class="slide-wrapper">
+        <div class="slide-num">Question ${i+1}</div>
+        <div class="slide">
+          <div class="q-text">Q${i+1}. ${m.q}</div>
+          <div class="opts">
+            ${m.opts.map((o,oi)=>`<div class="opt ${oi===m.correct?'correct':''}"><span class="opt-label">${LBLS[oi]}.</span><span class="opt-text">${o}</span></div>`).join('')}
+          </div>
+          <div class="ans-badge">
+            <div class="ans-pill">✓ Answer: ${LBLS[m.correct]}</div>
+            <div class="exp-text">${m.exp}</div>
+          </div>
+        </div>
+      </div>`;
+    con.innerHTML += html;
+  });
+  switchTab('slides');
+  setStatus(`✅ Loaded ${mcqData.length} questions.`);
+}
+
+/** ── PDF EXPORT: 2 PAGES PER QUESTION ── **/
+async function exportPDF(){
+  mcqData = parseMCQs();
+  if(!mcqData.length) return;
+  setStatus('<span class="loader"></span> Generating 2-Page/Question PDF...');
+  await new Promise(r => setTimeout(r, 100));
+
+  const { jsPDF } = window.jspdf;
+  const W=297, H=167; // 16:9 Landscape
+  const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:[W,H] });
+
+  mcqData.forEach((m, idx) => {
+    // --- PAGE 1: QUESTION ONLY ---
+    if(idx > 0) pdf.addPage([W,H], 'landscape');
+    drawPdfSlide(pdf, m, idx, false);
+
+    // --- PAGE 2: QUESTION + ANSWER ---
+    pdf.addPage([W,H], 'landscape');
+    drawPdfSlide(pdf, m, idx, true);
+  });
+
+  pdf.save('Chalkboard_MCQs.pdf');
+  setStatus('🚀 PDF Exported!');
+}
+
+function drawPdfSlide(pdf, m, idx, showAnswer) {
+  const W=297, H=167;
+  // Background
+  pdf.setFillColor(...COLORS.board);
+  pdf.rect(0, 0, W, H, 'F');
+  
+  // Header Badge
+  pdf.setFillColor(...COLORS.boardDark);
+  pdf.roundedRect(10, 8, 40, 10, 2, 2, 'F');
+  pdf.setTextColor(...COLORS.yellow);
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(`QUESTION ${idx+1}`, 30, 14.5, {align:'center'});
+
+  // Question
+  pdf.setTextColor(...COLORS.white);
+  pdf.setFontSize(18);
+  const qLines = pdf.splitTextToSize(`Q. ${m.q}`, W-40);
+  pdf.text(qLines, 15, 30);
+  
+  let y = 30 + (qLines.length * 8) + 5;
+
+  // Options
+  m.opts.forEach((o, i) => {
+    const isCorrect = (i === m.correct && showAnswer);
+    pdf.setFontSize(14);
+    
+    if(isCorrect) {
+        pdf.setFillColor(26, 77, 46); // Highlight correct background
+        pdf.rect(12, y-6, W-24, 10, 'F');
+        pdf.setTextColor(...COLORS.green);
+        pdf.setFont('helvetica', 'bold');
+    } else {
+        pdf.setTextColor(...COLORS.yellow);
+        pdf.setFont('helvetica', 'bold');
+    }
+    
+    pdf.text(`${LBLS[i]}.`, 15, y);
+    
+    if(!isCorrect) pdf.setTextColor(...COLORS.white);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(o, 25, y);
+    y += 12;
+  });
+
+  // Reveal Answer & Explanation
+  if(showAnswer) {
+    y += 5;
+    pdf.setDrawColor(...COLORS.yellow);
+    pdf.setLineDash([1, 1]);
+    pdf.roundedRect(12, y-5, W-24, 25, 2, 2, 'D');
+    
+    pdf.setTextColor(...COLORS.yellow);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`Correct Answer: ${LBLS[m.correct]} - ${m.opts[m.correct]}`, 18, y+3);
+    
+    if(m.exp) {
+        pdf.setTextColor(...COLORS.blue);
+        pdf.setFont('helvetica', 'italic');
+        pdf.setFontSize(11);
+        const expLines = pdf.splitTextToSize(`Note: ${m.exp}`, W-35);
+        pdf.text(expLines, 18, y+12);
+    }
+  }
+}
+
+/** ── PPT EXPORT: 2 SLIDES PER QUESTION ── **/
+async function exportPPT(){
+  mcqData = parseMCQs();
+  if(!mcqData.length) return;
+  setStatus('<span class="loader"></span> Generating PPT...');
+  const pres = new PptxGenJS();
+  pres.layout = 'LAYOUT_WIDE';
+
+  mcqData.forEach((m, i) => {
+    // Slide 1: Question
+    const s1 = pres.addSlide();
+    s1.background = { color: '1F3D2B' };
+    s1.addText(`QUESTION ${i+1}`, { x:0.5, y:0.3, w:2, h:0.4, color:'FFD54F', fill:'163022', align:'center', bold:true });
+    s1.addText(m.q, { x:0.5, y:1.0, w:12, h:1.5, color:'F5F5F5', fontSize:28 });
+    m.opts.forEach((o, oi) => {
+      s1.addText(`${LBLS[oi]}. ${o}`, { x:0.8, y:2.8+(oi*0.8), w:11, h:0.6, color:'F5F5F5', fontSize:22 });
+    });
+
+    // Slide 2: Answer
+    const s2 = pres.addSlide();
+    s2.background = { color: '1F3D2B' };
+    s2.addText(`ANSWER ${i+1}`, { x:0.5, y:0.3, w:2, h:0.4, color:'A5D6A7', fill:'163022', align:'center', bold:true });
+    s2.addText(m.q, { x:0.5, y:1.0, w:12, h:1.5, color:'F5F5F5', fontSize:28 });
+    m.opts.forEach((o, oi) => {
+      const isC = oi === m.correct;
+      s2.addText(`${LBLS[oi]}. ${o}`, { 
+        x:0.8, y:2.8+(oi*0.8), w:11, h:0.6, 
+        color: isC ? 'A5D6A7' : 'F5F5F5', 
+        fontSize:22, bold: isC,
+        fill: isC ? '1a4d2e' : null
+      });
+    });
+    s2.addText(`✓ Answer: ${LBLS[m.correct]}`, { x:0.5, y:6.2, w:12, h:0.5, color:'FFD54F', fontSize:18, bold:true });
+    if(m.exp) s2.addText(m.exp, { x:0.5, y:6.7, w:12, h:0.5, color:'90CAF9', fontSize:14, italic:true });
+  });
+
+  pres.writeFile({ fileName: 'Chalkboard_Lesson.pptx' });
+  setStatus('🚀 PPT Exported!');
+}
+
+/** ── LIVE TEST LOGIC ── **/
+let testState = { cur: 0, score: 0, answered: [] };
+
+function startTest(){
+  mcqData = parseMCQs();
+  if(!mcqData.length) return;
+  testState = { cur: 0, score: 0, answered: new Array(mcqData.length).fill(null) };
+  document.getElementById('test-empty').style.display = 'none';
+  document.getElementById('test-content').style.display = 'block';
+  renderTest();
+  switchTab('test');
+}
+
+function renderTest(){
+  const m = mcqData[testState.cur];
+  document.getElementById('test-progress').textContent = `Q ${testState.cur + 1} of ${mcqData.length}`;
+  document.getElementById('test-score').textContent = `Score: ${testState.score}`;
+  document.getElementById('test-q').textContent = m.q;
+  
+  const optCon = document.getElementById('test-opts');
+  optCon.innerHTML = '';
+  const hasAnswered = testState.answered[testState.cur] !== null;
+
+  m.opts.forEach((o, i) => {
+    const btn = document.createElement('div');
+    btn.className = 'test-opt';
+    btn.innerHTML = `<strong>${LBLS[i]}.</strong> ${o}`;
+    
+    if(hasAnswered) {
+        if(i === m.correct) btn.classList.add('correct-ans');
+        else if(i === testState.answered[testState.cur]) btn.classList.add('wrong-ans');
+    } else {
+        btn.onclick = () => selectOpt(i);
+    }
+    optCon.appendChild(btn);
+  });
+
+  const fb = document.getElementById('test-feedback');
+  if(hasAnswered) {
+    fb.style.display = 'block';
+    const isCorrect = testState.answered[testState.cur] === m.correct;
+    fb.style.background = isCorrect ? 'rgba(165,214,167,0.1)' : 'rgba(239,154,154,0.1)';
+    fb.style.color = isCorrect ? 'var(--green)' : 'var(--red)';
+    fb.innerHTML = `<strong>${isCorrect?'Correct!':'Wrong.'}</strong> Correct was ${LBLS[m.correct]}.<br><small>${m.exp}</small>`;
+  } else {
+    fb.style.display = 'none';
+  }
+}
+
+function selectOpt(idx){
+  testState.answered[testState.cur] = idx;
+  if(idx === mcqData[testState.cur].correct) testState.score++;
+  renderTest();
+}
+
+function testNav(dir){
+  const newIdx = testState.cur + dir;
+  if(newIdx >= 0 && newIdx < mcqData.length) {
+    testState.cur = newIdx;
+    renderTest();
+  }
+}
+
+function setStatus(txt, col) {
+  const s = document.getElementById('status');
+  s.innerHTML = txt;
+  if(col) s.style.color = col;
+}
+</script>
+</body>
+</html>
